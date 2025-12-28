@@ -3,7 +3,7 @@ import Stripe from "stripe";
 
 const plans = [
   {
-    id: "basic",
+    _id: "basic",
     name: "Basic",
     price: 10,
     credits: 100,

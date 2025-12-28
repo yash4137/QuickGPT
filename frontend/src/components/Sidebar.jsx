@@ -2,11 +2,35 @@ import React, { useState } from 'react'
 import { useAppContext } from '../context/AppContext'
 import { assets } from '../assets/assets'
 import moment from 'moment'
+import toast from 'react-hot-toast'
+
 
 const Sidebar = ({isMenuOpen, setIsMenuOpen}) => {
 
-  const {chats, setSelectedChat, theme, setTheme, user, navigate} = useAppContext()
+  const {chats, setSelectedChat, theme, setTheme, user, navigate, createNewChat, axios, setChats, fetchUsersChats, setToken, token} = useAppContext()
   const [search, setSearch] = useState('')
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    setToken(null);
+    toast.success('Logged out successfully');
+  }
+
+  const deleteChat = async(e, chatId) => {
+    try{
+      e.stopPropagation();
+      const confirm = window.confirm('Are you sure you want to delete this chat?');
+      if(!confirm) return;
+      const {data} = await axios.post('/api/chat/delete',{chatId}, {headers: {Authorization: token}});
+      if(data.success){
+        setChats(prev => prev.filter(chat => chat._id !== chatId));
+        await fetchUsersChats();
+        toast.success(data.message);
+      }
+    }catch(error){
+      toast.error(error.message);
+    }
+  };
 
   return (
     <div className={`flex flex-col h-screen min-w-80 p-6 bg-white/95 dark:bg-gradient-to-b dark:from-[#1a161c]/95 dark:to-[#000000]/95 border-r border-gray-200 dark:border-[#80609F]/20 backdrop-blur-xl transition-all duration-500 max-md:absolute left-0 z-50 shadow-xl max-md:shadow-2xl ${!isMenuOpen && 'max-md:-translate-x-full'}`}>
@@ -21,7 +45,7 @@ const Sidebar = ({isMenuOpen, setIsMenuOpen}) => {
       </div>
 
       {/* New Chat Button */}
-      <button className='flex justify-center items-center w-full py-3 px-4 text-white font-medium bg-gradient-to-r from-[#A456F7] to-[#3D81F6] text-sm rounded-xl cursor-pointer btn-hover-lift shadow-lg hover:shadow-xl transition-all duration-300'>
+      <button onClick={createNewChat} className='flex justify-center items-center w-full py-3 px-4 text-white font-medium bg-gradient-to-r from-[#A456F7] to-[#3D81F6] text-sm rounded-xl cursor-pointer btn-hover-lift shadow-lg hover:shadow-xl transition-all duration-300'>
         <span className='mr-2 text-xl font-light'>+</span>
         <span>New Chat</span>
       </button>
@@ -67,7 +91,8 @@ const Sidebar = ({isMenuOpen, setIsMenuOpen}) => {
                 <img 
                   src={assets.bin_icon} 
                   className='opacity-0 group-hover:opacity-100 w-4 ml-2 cursor-pointer not-dark:invert transition-opacity duration-200' 
-                  alt='Delete' 
+                  alt='' 
+                  onClick={e => toast.promise(deleteChat(e, chat._id), {loading: 'deleting...' })}
                 />
               </div>
             </div>
@@ -130,15 +155,38 @@ const Sidebar = ({isMenuOpen, setIsMenuOpen}) => {
         </div>
         
         {/* User Account */}
-        <div className='flex items-center gap-3 p-3.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl cursor-pointer hover:bg-gray-100 dark:hover:bg-white/10 transition-all duration-200 group'>
+        {/* <div className='flex items-center gap-3 p-3.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl cursor-pointer hover:bg-gray-100 dark:hover:bg-white/10 transition-all duration-200 group'>
           <img src={assets.user_icon} className='w-9 h-9 rounded-full border-2 border-gray-200 dark:border-purple-600' alt='User' />
           <p className='flex-1 text-sm font-medium text-gray-800 dark:text-primary truncate'>
             {user ? user.name : 'Login your account'}
           </p>
           {user && (
             <img 
+              onClick={logout}
               src={assets.logout_icon} 
               className='opacity-0 group-hover:opacity-100 h-5 cursor-pointer not-dark:invert transition-opacity duration-200' 
+              alt="Logout"
+            />
+          )}
+        </div> */}
+        {/* User Account */}
+        <div className='flex items-center gap-3 p-3.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl cursor-pointer hover:bg-gray-100 dark:hover:bg-white/10 transition-all duration-200 group'>
+          <img src={assets.user_icon} className='w-9 h-9 rounded-full border-2 border-gray-200 dark:border-purple-600' alt='User' />
+          <div className='flex-1 min-w-0'>
+            <p className='text-sm font-medium text-gray-800 dark:text-primary truncate'>
+              {user ? user.name : 'Login your account'}
+            </p>
+            {user && (
+              <p className='text-xs text-gray-500 dark:text-[#B1A6C0] truncate'>
+                {user.email}
+              </p>
+            )}
+          </div>
+          {user && (
+            <img 
+              onClick={logout}
+              src={assets.logout_icon} 
+              className='opacity-0 group-hover:opacity-100 h-5 cursor-pointer not-dark:invert transition-opacity duration-200 flex-shrink-0' 
               alt="Logout"
             />
           )}
